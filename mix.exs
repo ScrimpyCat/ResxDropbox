@@ -1,0 +1,28 @@
+defmodule ResxDropbox.MixProject do
+    use Mix.Project
+
+    def project do
+        [
+            app: :resx_dropbox,
+            description: "Dropbox producer for the resx library",
+            version: "0.0.1",
+            elixir: "~> 1.7",
+            start_permanent: Mix.env() == :prod,
+            deps: deps(),
+            dialyzer: [plt_add_deps: :transitive]
+        ]
+    end
+
+    def application do
+        [extra_applications: [:logger]]
+    end
+
+    defp deps do
+        [
+            { :resx, "== 0.0.1" },
+            { :httpoison, "~> 1.5" },
+            { :poison, "~> 4.0" },
+            { :ex_doc, "~> 0.18", only: :dev, runtime: false }
+        ]
+    end
+end
