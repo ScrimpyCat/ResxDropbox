@@ -16,4 +16,8 @@ defmodule ResxDropbox.Utility do
     end
 
     def hash(algo \\ :sha256, data), do: hash_init(algo) |> hash_update(data) |> hash_final
+
+    def hasher(algo \\ :sha256), do: { :dropbox, { :crypto, :hash, [algo] } }
+
+    def streamable_hasher(algo \\ :sha256), do: { :dropbox, { :crypto, :hash_init, [algo], nil }, { :crypto, :hash_update, 2 }, { :crypto, :hash_final, 1 } }
 end
