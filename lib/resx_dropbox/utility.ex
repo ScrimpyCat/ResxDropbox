@@ -9,7 +9,9 @@ defmodule ResxDropbox.Utility do
         { algo, <<>>, <<>> }
     end
 
-    @spec hash_update(state, binary) :: state
+    @spec hash_update(state, iodata) :: state
+    def hash_update(state, []), do: state
+    def hash_update(state, [data|list]), do: hash_update(state, data) |> hash_update(list)
     def hash_update({ algo, <<block :: binary-size(@block_size), chunks :: binary>>, hashes }, data), do: hash_update({ algo, chunks <> data, hashes <> :crypto.hash(algo, block) }, <<>>)
     def hash_update(state, <<>>), do: state
     def hash_update({ algo, chunks, hashes }, data), do: hash_update({ algo, chunks <> data, hashes }, <<>>)
@@ -21,7 +23,7 @@ defmodule ResxDropbox.Utility do
         :crypto.hash(algo, hashes) |> Base.encode16(case: :lower)
     end
 
-    @spec hash(algos, binary) :: String.t
+    @spec hash(algos, iodata) :: String.t
     def hash(algo \\ :sha256, data), do: hash_init(algo) |> hash_update(data) |> hash_final
 
     @spec hasher(algos) :: Resx.Resource.hasher
