@@ -88,7 +88,7 @@ defmodule ResxDropbox.Utility do
       This can be applied globally as follows:
 
         config :resx,
-            hash: ResxDropbox.hasher
+            hash: ResxDropbox.Utility.hasher
 
       Or on individual resources:
 
@@ -107,7 +107,7 @@ defmodule ResxDropbox.Utility do
       This can be applied globally as follows:
 
         config :resx,
-            hash: ResxDropbox.streamable_hasher
+            hash: ResxDropbox.Utility.streamable_hasher
 
       Or on individual resources:
 
