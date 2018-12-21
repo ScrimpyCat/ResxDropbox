@@ -56,11 +56,15 @@ defmodule ResxDropbox do
     defp timestamp(data, :client), do: data["client_modified"] |> format_timestamp
     defp timestamp(data, nil), do: timestamp(data, Application.get_env(:resx_dropbox, :timestamp, :server))
 
+    defp get_metadata(path, token), do: HTTPoison.post("https://api.dropboxapi.com/2/files/get_metadata", Poison.encode!(%{ path: path }), [{"Content-Type", "application/json"}|header(token)])
+
+    defp download(path, token), do: HTTPoison.post("https://content.dropboxapi.com/2/files/download", "", [{"Dropbox-API-Arg", Poison.encode!(%{ path: path })}|header(token)])
+
     @impl Resx.Producer
     def open(reference, opts \\ []) do
         with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :content, { :ok, response = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :content, HTTPoison.post("https://content.dropboxapi.com/2/files/download", "", [{"Dropbox-API-Arg", Poison.encode!(%{ path: path })}|header(token)]), path },
+             { :content, { :ok, response = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :content, download(path, token), path },
              { :data, { :ok, data } } <- { :data, api_result(response) |> Poison.decode } do
                 content = %Content{
                     type: Resx.Producers.File.mime(data["name"]),
@@ -91,7 +95,7 @@ defmodule ResxDropbox do
     def exists?(reference) do
         with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, HTTPoison.post("https://api.dropboxapi.com/2/files/get_metadata", Poison.encode!(%{ path: path }), [{"Content-Type", "application/json"}|header(token)]), path } do
+             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), path } do
                 { :ok, true }
         else
             { :path, error } -> error
