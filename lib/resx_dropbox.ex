@@ -41,7 +41,7 @@ defmodule ResxDropbox do
 
     defp header(token), do: [{"Authorization", "Bearer #{token}"}]
 
-    defp get_header([{ key, value }|headers], key), do: value
+    defp get_header([{ key, value }|_], key), do: value
     defp get_header([_|headers], key), do: get_header(headers, key)
     defp get_header(_, _), do: nil
 
@@ -93,9 +93,9 @@ defmodule ResxDropbox do
 
     @impl Resx.Producer
     def exists?(reference) do
-        with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
+        with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), path } do
+             { :metadata, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), path } do
                 { :ok, true }
         else
             { :path, error } -> error
@@ -166,7 +166,7 @@ defmodule ResxDropbox do
 
     @impl Resx.Producer
     def resource_attributes(reference) do
-        with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
+        with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
              { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, HTTPoison.post("https://api.dropboxapi.com/2/files/get_metadata", Poison.encode!(%{ path: path }), [{"Content-Type", "application/json"}|header(token)]), path },
              { :data, { :ok, data } } <- { :data, metadata.body |> Poison.decode } do
