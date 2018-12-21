@@ -163,4 +163,19 @@ defmodule ResxDropbox do
             error -> error
         end
     end
+
+    @impl Resx.Producer
+    def resource_attributes(reference) do
+        with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
+             { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
+             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, HTTPoison.post("https://api.dropboxapi.com/2/files/get_metadata", Poison.encode!(%{ path: path }), [{"Content-Type", "application/json"}|header(token)]), path },
+             { :data, { :ok, data } } <- { :data, metadata.body |> Poison.decode } do
+                { :ok, data }
+        else
+            { :path, error } -> error
+            { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
+            { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
+            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+        end
+    end
 end
