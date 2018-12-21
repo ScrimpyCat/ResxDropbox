@@ -60,6 +60,16 @@ defmodule ResxDropbox do
 
     defp download(path, token), do: HTTPoison.post("https://content.dropboxapi.com/2/files/download", "", [{"Dropbox-API-Arg", Poison.encode!(%{ path: path })}|header(token)])
 
+    @doc """
+      Opens a dropbox resource.
+
+      The `:timestamp` allows for choosing between `:server` or `:client` timestamps.
+      By default the server timestamp is used, or whatever application timestamp
+      setting was given.
+
+        config :resx_dropbox,
+            timestamp: :client
+    """
     @impl Resx.Producer
     def open(reference, opts \\ []) do
         with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
