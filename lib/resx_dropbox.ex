@@ -107,4 +107,49 @@ defmodule ResxDropbox do
                 end
         end
     end
+
+    @impl Resx.Producer
+    def alike?(a, b) do
+        with { :a, { :ok, repo_a } } <- { :a, to_path(a) },
+             { :b, { :ok, repo_b } } <- { :b, to_path(b) } do
+                case { repo_a, repo_b } do
+                    { repo, repo } -> true
+                    { { _, { :id, id } }, { _, { :id, id } } } -> true
+                    { { name_a, path_a }, { name_b, path_b } } ->
+                        with { :token_a, { :ok, token_a }, _ } <- { :token_a, get_token(name_a), name_a },
+                             { :token_b, { :ok, token_b }, _ } <- { :token_b, get_token(name_b), name_b } do
+                                a = case path_a do
+                                    ^path_b when token_a == token_b -> true
+                                    { :id, id } -> id
+                                    { :path, path } ->
+                                        with { :metadata, { :ok, response = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token_a), path },
+                                             { :data, { :ok, data } } <- { :data, response.body |> Poison.decode } do
+                                                data["id"]
+                                        else
+                                            { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
+                                            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+                                        end
+                                end
+
+                                case { path_b, a } do
+                                    { _, true } -> true
+                                    { { :id, id }, id } -> true
+                                    { { :id, _ }, _ } -> false
+                                    { { :path, path }, id } ->
+                                        with { :metadata, { :ok, response = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token_b), path },
+                                             { :data, { :ok, data } } <- { :data, response.body |> Poison.decode } do
+                                                data["id"] == id
+                                        else
+                                            { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
+                                            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+                                        end
+                                end
+                        else
+                            { _, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
+                        end
+                end
+        else
+            _ -> false
+        end
+    end
 end
