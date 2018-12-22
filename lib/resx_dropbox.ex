@@ -1,4 +1,37 @@
 defmodule ResxDropbox do
+    @moduledoc """
+      A producer to handle dropbox URIs.
+
+        ResxDropbox.open("dbpath:/path/to/file.txt")
+        ResxDropbox.open("dbid:AAAAAAAAAAAAAAAAAAAAAA")
+
+      ### Types
+
+      MIME types are inferred from file extension names. Following the behaviour
+      of `Resx.Producers.File.mime/1`.
+
+      ### Authorities
+
+      Authorities are used to match with a dropbox access token. When no authority
+      is provided, it will attempt to find an access token for `nil`. These tokens
+      can be configured by setting the `:token` configuration option for `:resx_dropbox`.
+
+        config :resx_dropbox,
+            token: "TOKEN"
+
+        config :resx_dropbox,
+            token: %{ nil => "TOKEN1", "foo@bar" => "TOKEN2", "main" => "TOKEN3" }
+
+        config :resx_dropbox,
+            token: { MyDropboxTokenRetriever, :to_token, 1 }
+
+      The `:token` field should contain either a string which will be the token
+      used by any authority, or a map of authority keys and token string values,
+      or a callback function that will be passed the authority and should return
+      `{ :ok, token }` or `:error` if there is no token for the given authority.
+      Valid function formats are any callback variant, see `Callback` for more
+      information.
+    """
     use Resx.Producer
     require Callback
 
