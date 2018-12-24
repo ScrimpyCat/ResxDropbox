@@ -1,6 +1,8 @@
 defmodule ResxDropbox.Utility do
     @moduledoc """
-      ## Dropbox Content Hash
+      General helpers.
+
+      ### Dropbox Content Hash
 
       This module provides an implementation of the [Dropbox Content Hash](https://www.dropbox.com/developers/reference/content-hash).
       For use externally or with `Resx.Resource`.
