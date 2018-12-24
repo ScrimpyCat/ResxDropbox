@@ -19,7 +19,7 @@ defmodule ResxDropbox.MixProject do
 
     defp deps do
         [
-            { :resx, "== 0.0.2" },
+            { :resx, "== 0.0.3" },
             { :callback, "0.1.0" },
             { :httpoison, "~> 1.5" },
             { :poison, "~> 4.0" },

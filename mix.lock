@@ -15,7 +15,7 @@
   "parse_trans": {:hex, :parse_trans, "3.3.0", "09765507a3c7590a784615cfd421d101aec25098d50b89d7aa1d66646bc571c1", [:rebar3], [], "hexpm"},
   "path_match": {:hex, :path_match, "0.1.0", "7969b7de9ff1c9d8b35565e65c35b58d0bb2f56a28144266323b25c9ac420059", [:mix], [], "hexpm"},
   "poison": {:hex, :poison, "4.0.1", "bcb755a16fac91cad79bfe9fc3585bb07b9331e50cfe3420a24bcc2d735709ae", [:mix], [], "hexpm"},
-  "resx": {:hex, :resx, "0.0.2", "dc829c98cce67b6fa7b0c910f594efbc576044bc14dabd6eeb487366cb6567d0", [:mix], [{:callback, "~> 0.1.0", [hex: :callback, repo: "hexpm", optional: false]}, {:mime, "~> 1.3", [hex: :mime, repo: "hexpm", optional: false]}, {:path_match, "~> 0.1.0", [hex: :path_match, repo: "hexpm", optional: false]}], "hexpm"},
+  "resx": {:hex, :resx, "0.0.3", "be5ed192ba1b50581491031f04b098e4b261739063007723966f6b8f11d8667f", [:mix], [{:callback, "~> 0.1.0", [hex: :callback, repo: "hexpm", optional: false]}, {:mime, "~> 1.3", [hex: :mime, repo: "hexpm", optional: false]}, {:path_match, "~> 0.1.0", [hex: :path_match, repo: "hexpm", optional: false]}], "hexpm"},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.4", "f0eafff810d2041e93f915ef59899c923f4568f4585904d010387ed74988e77b", [:make, :mix, :rebar3], [], "hexpm"},
   "unicode_util_compat": {:hex, :unicode_util_compat, "0.4.1", "d869e4c68901dd9531385bb0c8c40444ebf624e60b6962d95952775cac5e90cd", [:rebar3], [], "hexpm"},
 }
