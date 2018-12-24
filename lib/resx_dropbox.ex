@@ -5,6 +5,11 @@ defmodule ResxDropbox do
         ResxDropbox.open("dbpath:/path/to/file.txt")
         ResxDropbox.open("dbid:AAAAAAAAAAAAAAAAAAAAAA")
 
+      Add `ResxDropbox` to your list of resx producers.
+
+        config :resx,
+            producers: [ResxDropbox]
+
       ### Types
 
       MIME types are inferred from file extension names. Following the behaviour
