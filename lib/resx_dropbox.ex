@@ -93,6 +93,9 @@ defmodule ResxDropbox do
 
     defp download(path, token), do: HTTPoison.post("https://content.dropboxapi.com/2/files/download", "", [{"Dropbox-API-Arg", Poison.encode!(%{ path: path })}|header(token)])
 
+    @impl Resx.Producer
+    def schemes(), do: ["dbpath", "dbid"]
+
     @doc """
       Opens a dropbox resource.
 
