@@ -210,7 +210,7 @@ defmodule ResxDropbox do
             { :ok, { nil, { :id, id } } } -> { :ok, URI.encode("db" <> id) }
             { :ok, { authority, { :id, "id:" <> id } } } -> { :ok, URI.encode("dbid://" <> authority <> "/" <> id) }
             { :ok, { nil, { :path, path } } } -> { :ok, URI.encode("dbpath:" <> path) }
-            { :ok, { authority, { :path, path } } } -> { :ok, URI.encode("dbpath://" <> authority <> "/" <> path) }
+            { :ok, { authority, { :path, path } } } -> { :ok, URI.encode("dbpath://" <> authority <> path) }
             error -> error
         end
     end
