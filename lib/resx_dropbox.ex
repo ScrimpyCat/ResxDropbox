@@ -98,6 +98,8 @@ defmodule ResxDropbox do
 
     defp download(path, token), do: HTTPoison.post("https://content.dropboxapi.com/2/files/download", "", [{"Dropbox-API-Arg", Poison.encode!(%{ path: path })}|header(token)])
 
+    defp upload(path, token, contents, timestamp, mute), do: HTTPoison.post("https://content.dropboxapi.com/2/files/upload", contents, [{"Dropbox-API-Arg", Poison.encode!(%{ path: path, mode: :overwrite, client_modified: timestamp, mute: mute })}|header(token)])
+
     @impl Resx.Producer
     def schemes(), do: ["dbpath", "dbid"]
 
@@ -227,6 +229,37 @@ defmodule ResxDropbox do
             { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
             { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
             { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+        end
+    end
+
+    # TODO: source=&mute= encoding and opening, make upload_session stream
+    def store(resource, options) do
+        with { :path, { :ok, path } } <- { :path, Keyword.fetch(options, :path) },
+             name <- options[:auth],
+             { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
+             mute <- options[:mute] || false,
+             data <- Content.data(resource.content),
+             meta_path <- path <> ".meta",
+             { :timestamp, { :ok, timestamp } } <- { :timestamp, DateTime.from_unix(resource.reference.integrity.timestamp) },
+             { :upload_meta, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :upload_meta, upload(meta_path, token, :erlang.term_to_binary(resource.meta), timestamp, mute), meta_path },
+             { :upload_content, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :upload_content, upload(path, token, data, timestamp, mute), path } do
+                content = %Content{
+                    type: Resx.Producers.File.mime(path),
+                    data: data
+                }
+                reference = %Reference{
+                    adapter: __MODULE__,
+                    repository: { name, { :path, path } },
+                    integrity: %Integrity{
+                        timestamp: DateTime.to_unix(DateTime.utc_now)
+                    }
+                }
+                { :ok, %{ resource | reference: reference, content: content } }
+        else
+            { :path, _ } -> { :error, { :internal, "a store :path must be specified" } }
+            { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
+            { :upload_content, error, path } -> format_http_error(error, path, "upload content")
+            { :upload_meta, error, path } -> format_http_error(error, path, "upload meta")
         end
     end
 end
