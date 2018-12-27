@@ -219,7 +219,7 @@ defmodule ResxDropbox do
     def resource_attributes(reference) do
         with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, HTTPoison.post("https://api.dropboxapi.com/2/files/get_metadata", Poison.encode!(%{ path: path }), [{"Content-Type", "application/json"}|header(token)]), path },
+             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), path },
              { :data, { :ok, data } } <- { :data, metadata.body |> Poison.decode } do
                 { :ok, data }
         else
