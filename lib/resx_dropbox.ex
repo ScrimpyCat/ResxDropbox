@@ -100,6 +100,8 @@ defmodule ResxDropbox do
 
     defp upload(path, token, contents, timestamp, mute), do: HTTPoison.post("https://content.dropboxapi.com/2/files/upload", contents, [{"Dropbox-API-Arg", Poison.encode!(%{ path: path, mode: :overwrite, client_modified: timestamp, mute: mute })}|header(token)])
 
+    defp delete(path, token), do: HTTPoison.post("https://api.dropboxapi.com/2/files/delete", Poison.encode!(%{ path: path }), [{"Content-Type", "application/json"}|header(token)])
+
     @impl Resx.Producer
     def schemes(), do: ["dbpath", "dbid"]
 
@@ -260,6 +262,21 @@ defmodule ResxDropbox do
             { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
             { :upload_content, error, path } -> format_http_error(error, path, "upload content")
             { :upload_meta, error, path } -> format_http_error(error, path, "upload meta")
+        end
+    end
+
+    @spec delete(Resource.t | Resx.ref) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
+    def delete(%Resource{ reference: reference }), do: delete(reference)
+    def delete(reference) do
+        with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
+             { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
+             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :delete, delete(path, token), path } do
+                :ok
+        else
+            { :path, error } -> error
+            { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
+            { :delete, error, path } -> format_http_error(error, path, "delete content")
+            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
         end
     end
 end
