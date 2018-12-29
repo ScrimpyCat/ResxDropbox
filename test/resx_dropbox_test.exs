@@ -7,8 +7,9 @@ defmodule ResxDropboxTest do
     @token System.get_env("RESX_DROPBOX_TOKEN_TEST")
 
     setup_all do
+        Application.put_env(:resx, :producers, [ResxDropbox])
         Application.put_env(:resx_dropbox, :token, @token)
-        Resx.Resource.open!("data:,test") |> ResxDropbox.store([path: @test_file])
+        Resx.Resource.open!("data:,test") |> Resx.Resource.store!(ResxDropbox, [path: @test_file])
 
         on_exit fn ->
             Application.put_env(:resx_dropbox, :token, @token)
@@ -24,29 +25,29 @@ defmodule ResxDropboxTest do
     end
 
     test "open" do
-        assert { :ok, resource } = ResxDropbox.open(@test_uri)
+        assert { :ok, resource } = Resx.Resource.open(@test_uri)
         assert "test" == Resx.Resource.Content.data(resource.content)
 
         Application.delete_env(:resx_dropbox, :token)
 
-        assert { :error, { :invalid_reference, "no token for authority (nil)" } } == ResxDropbox.open(@test_uri)
+        assert { :error, { :invalid_reference, "no token for authority (nil)" } } == Resx.Resource.open(@test_uri)
     end
 
     test "uri" do
-        assert { :ok, "dbid:foo" } == ResxDropbox.resource_uri("dbid:foo")
-        assert { :ok, "dbid://foo@bar/foo" } == ResxDropbox.resource_uri("dbid://foo@bar/foo")
-        assert { :ok, "dbpath:/foo.txt" } == ResxDropbox.resource_uri("dbpath:/foo.txt")
-        assert { :ok, "dbpath://foo@bar/foo.txt" } == ResxDropbox.resource_uri("dbpath://foo@bar/foo.txt")
-        assert { :ok, "dbpath:" } == ResxDropbox.resource_uri("dbpath:/")
-        assert { :ok, "dbpath://foo@bar" } == ResxDropbox.resource_uri("dbpath://foo@bar/")
+        assert { :ok, "dbid:foo" } == Resx.Resource.uri("dbid:foo")
+        assert { :ok, "dbid://foo@bar/foo" } == Resx.Resource.uri("dbid://foo@bar/foo")
+        assert { :ok, "dbpath:/foo.txt" } == Resx.Resource.uri("dbpath:/foo.txt")
+        assert { :ok, "dbpath://foo@bar/foo.txt" } == Resx.Resource.uri("dbpath://foo@bar/foo.txt")
+        assert { :ok, "dbpath:" } == Resx.Resource.uri("dbpath:/")
+        assert { :ok, "dbpath://foo@bar" } == Resx.Resource.uri("dbpath://foo@bar/")
 
         Application.delete_env(:resx_dropbox, :token)
 
-        assert { :ok, "dbid:foo" } == ResxDropbox.resource_uri("dbid:foo")
-        assert { :ok, "dbid://foo@bar/foo" } == ResxDropbox.resource_uri("dbid://foo@bar/foo")
-        assert { :ok, "dbpath:/foo.txt" } == ResxDropbox.resource_uri("dbpath:/foo.txt")
-        assert { :ok, "dbpath://foo@bar/foo.txt" } == ResxDropbox.resource_uri("dbpath://foo@bar/foo.txt")
-        assert { :ok, "dbpath:" } == ResxDropbox.resource_uri("dbpath:/")
-        assert { :ok, "dbpath://foo@bar" } == ResxDropbox.resource_uri("dbpath://foo@bar/")
+        assert { :ok, "dbid:foo" } == Resx.Resource.uri("dbid:foo")
+        assert { :ok, "dbid://foo@bar/foo" } == Resx.Resource.uri("dbid://foo@bar/foo")
+        assert { :ok, "dbpath:/foo.txt" } == Resx.Resource.uri("dbpath:/foo.txt")
+        assert { :ok, "dbpath://foo@bar/foo.txt" } == Resx.Resource.uri("dbpath://foo@bar/foo.txt")
+        assert { :ok, "dbpath:" } == Resx.Resource.uri("dbpath:/")
+        assert { :ok, "dbpath://foo@bar" } == Resx.Resource.uri("dbpath://foo@bar/")
     end
 end
