@@ -50,4 +50,9 @@ defmodule ResxDropboxTest do
         assert { :ok, "dbpath:" } == Resx.Resource.uri("dbpath:/")
         assert { :ok, "dbpath://foo@bar" } == Resx.Resource.uri("dbpath://foo@bar/")
     end
+
+    test "hash" do
+        resource = Resx.Resource.open!(@test_uri)
+        assert resource.reference.integrity.checksum == Resx.Resource.hash(resource, ResxDropbox.Utility.streamable_hasher)
+    end
 end
