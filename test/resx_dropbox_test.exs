@@ -33,6 +33,15 @@ defmodule ResxDropboxTest do
         assert { :error, { :invalid_reference, "no token for authority (nil)" } } == Resx.Resource.open(@test_uri)
     end
 
+    test "exists?" do
+        assert { :ok, true } == Resx.Resource.exists?(@test_uri)
+        assert { :ok, false } == Resx.Resource.exists?(@test_uri <> ".foo")
+
+        Application.delete_env(:resx_dropbox, :token)
+
+        assert { :error, { :invalid_reference, "no token for authority (nil)" } } == Resx.Resource.exists?(@test_uri)
+    end
+
     test "uri" do
         assert { :ok, "dbid:foo" } == Resx.Resource.uri("dbid:foo")
         assert { :ok, "dbid://foo@bar/foo" } == Resx.Resource.uri("dbid://foo@bar/foo")
