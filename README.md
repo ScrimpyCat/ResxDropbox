@@ -11,3 +11,16 @@ def deps do
     [{ :resx_dropbox, "== 0.0.3" }]
 end
 ```
+
+Testing
+-------
+
+Set the environment variable `RESX_DROPBOX_TOKEN_TEST` to your access token before running the tests.
+
+```bash
+RESX_DROPBOX_TOKEN_TEST='DROPBOX_ACCES_TOKEN' mix test
+```
+
+The tests should create a text file in the root folder with the prefix `resx_dropbox_test_file_`, followed by the timestamp. After the tests have completed running this file should be removed from your dropbox automatically.
+
+The tests do not mute the notifications so you will see these notifications if you look at the dropbox account you're testing with.
