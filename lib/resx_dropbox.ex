@@ -265,18 +265,19 @@ defmodule ResxDropbox do
         end
     end
 
-    @spec delete(Resource.t | Resx.ref) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
-    def delete(%Resource{ reference: reference }), do: delete(reference)
-    def delete(reference) do
+    @spec remove(Resource.t | Resx.ref, [meta: boolean]) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
+    def remove(reference, opts \\ [])
+    def remove(%Resource{ reference: reference }, opts), do: remove(reference, opts)
+    def remove(reference, opts) do
         with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :delete, delete(path, token), path } do
+             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, if(opts[:meta], do: delete(path <> ".meta", token), else: { :ok, %HTTPoison.Response{ status_code: 200 } }), path, "meta" },
+             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, delete(path, token), path, "content" } do
                 :ok
         else
             { :path, error } -> error
             { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
-            { :delete, error, path } -> format_http_error(error, path, "delete content")
-            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+            { :delete, error, path, kind } -> format_http_error(error, path, "delete #{kind}")
         end
     end
 end
