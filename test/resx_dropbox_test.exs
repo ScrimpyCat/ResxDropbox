@@ -42,6 +42,33 @@ defmodule ResxDropboxTest do
         assert { :error, { :invalid_reference, "no token for authority (nil)" } } == Resx.Resource.exists?(@test_uri)
     end
 
+    test "alike?" do
+        assert true == Resx.Resource.alike?(@test_uri, @test_uri)
+        assert false == Resx.Resource.alike?(@test_uri, @test_uri <> ".foo")
+        assert false == Resx.Resource.alike?(@test_uri <> ".foo", @test_uri)
+
+        { :ok, id } = Resx.Resource.open!(@test_uri) |> Resx.Resource.attribute("id")
+        assert true == Resx.Resource.alike?(@test_uri, "db" <> id)
+        assert true == Resx.Resource.alike?("db" <> id, @test_uri)
+        assert true == Resx.Resource.alike?("db" <> id, "db" <> id)
+        assert false == Resx.Resource.alike?("db" <> id, "db" <> id <> "1")
+        assert false == Resx.Resource.alike?("db" <> id, @test_uri <> ".foo")
+        assert false == Resx.Resource.alike?(@test_uri <> ".foo", "db" <> id)
+
+        Application.delete_env(:resx_dropbox, :token)
+
+        assert true == Resx.Resource.alike?(@test_uri, @test_uri)
+        assert false == Resx.Resource.alike?(@test_uri, @test_uri <> ".foo")
+        assert false == Resx.Resource.alike?(@test_uri <> ".foo", @test_uri)
+
+        assert false == Resx.Resource.alike?(@test_uri, "db" <> id)
+        assert false == Resx.Resource.alike?("db" <> id, @test_uri)
+        assert true == Resx.Resource.alike?("db" <> id, "db" <> id)
+        assert false == Resx.Resource.alike?("db" <> id, "db" <> id <> "1")
+        assert false == Resx.Resource.alike?("db" <> id, @test_uri <> ".foo")
+        assert false == Resx.Resource.alike?(@test_uri <> ".foo", "db" <> id)
+    end
+
     test "uri" do
         assert { :ok, "dbid:foo" } == Resx.Resource.uri("dbid:foo")
         assert { :ok, "dbid://foo@bar/foo" } == Resx.Resource.uri("dbid://foo@bar/foo")
