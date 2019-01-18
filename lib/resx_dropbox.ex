@@ -164,6 +164,16 @@ defmodule ResxDropbox do
         end
     end
 
+    @doc """
+      See if two references are alike.
+
+      This will check if two references are referring to the same content regardless
+      of if they're not of the same kind (aren't both paths or ids) or have different
+      access tokens (two different accounts referencing the same shared file). Due to
+      this not all the comparisons can be made without making an API request, if
+      there is ever a failure accessing that API then the function will assume that
+      the two references are not alike.
+    """
     @impl Resx.Producer
     def alike?(a, b) do
         with { :a, { :ok, repo_a } } <- { :a, to_path(a) },
