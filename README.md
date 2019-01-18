@@ -1,5 +1,5 @@
 # ResxDropbox
-A dropbox producer for resx
+A dropbox producer for [resx](https://github.com/ScrimpyCat/Resx)
 
 Installation
 ------------
