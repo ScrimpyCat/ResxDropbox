@@ -182,12 +182,12 @@ defmodule ResxDropbox do
                                              { :data, { :ok, data } } <- { :data, response.body |> Poison.decode } do
                                                 data["id"]
                                         else
-                                            { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
-                                            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+                                            _ -> false
                                         end
                                 end
 
                                 case { path_b, a } do
+                                    { _, false } -> false
                                     { _, true } -> true
                                     { { :id, id }, id } -> true
                                     { { :id, _ }, _ } -> false
@@ -196,12 +196,11 @@ defmodule ResxDropbox do
                                              { :data, { :ok, data } } <- { :data, response.body |> Poison.decode } do
                                                 data["id"] == id
                                         else
-                                            { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
-                                            { :data, _ } -> { :error, { :internal, "unable to process api result" } }
+                                            _ -> false
                                         end
                                 end
                         else
-                            { _, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
+                            _ -> false
                         end
                 end
         else
