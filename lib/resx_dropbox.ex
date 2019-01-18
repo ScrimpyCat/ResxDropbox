@@ -235,6 +235,19 @@ defmodule ResxDropbox do
         end
     end
 
+    @doc """
+      Store a resource as a file in dropbox.
+
+      The required options are:
+
+      * `:path` - expects a string denoting the path the file will be stored at.
+
+      The following options are all optional:
+
+      * `:auth` - expects the authority to lookup the token of.
+      * `:mute` - expects a boolean indicating whether the action should appear in
+      the dropbox change history or not.
+    """
     # TODO: source=&mute= encoding and opening, make upload_session stream
     @impl Resx.Storer
     def store(resource, options) do
