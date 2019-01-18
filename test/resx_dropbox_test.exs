@@ -13,7 +13,7 @@ defmodule ResxDropboxTest do
 
         on_exit fn ->
             Application.put_env(:resx_dropbox, :token, @token)
-            :ok = ResxDropbox.remove(@test_uri, meta: true)
+            :ok = Resx.Resource.discard(@test_uri)
         end
 
         :ok

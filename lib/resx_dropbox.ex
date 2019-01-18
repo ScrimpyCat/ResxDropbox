@@ -38,6 +38,7 @@ defmodule ResxDropbox do
       information.
     """
     use Resx.Producer
+    use Resx.Storer
     require Callback
 
     alias Resx.Resource
@@ -235,6 +236,7 @@ defmodule ResxDropbox do
     end
 
     # TODO: source=&mute= encoding and opening, make upload_session stream
+    @impl Resx.Storer
     def store(resource, options) do
         with { :path, { :ok, path } } <- { :path, Keyword.fetch(options, :path) },
              name <- options[:auth],
@@ -265,14 +267,23 @@ defmodule ResxDropbox do
         end
     end
 
-    @spec remove(Resource.t | Resx.ref, [meta: boolean]) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
-    def remove(reference, opts \\ [])
-    def remove(%Resource{ reference: reference }, opts), do: remove(reference, opts)
-    def remove(reference, opts) do
+    @doc """
+      Discard a dropbox resource.
+
+      The following options are all optional:
+
+      * `:meta` - specify whether the meta file should also be deleted. By default
+      it is.
+      * `:content` - specify whether the content file should also be deleted. By
+      default it is.
+    """
+    @impl Resx.Storer
+    @spec discard(Resx.ref, [meta: boolean, content: boolean]) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
+    def discard(reference, opts) do
         with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, if(opts[:meta], do: delete(path <> ".meta", token), else: { :ok, %HTTPoison.Response{ status_code: 200 } }), path, "meta" },
-             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, delete(path, token), path, "content" } do
+             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, if(opts[:meta] != false, do: delete(path <> ".meta", token), else: { :ok, %HTTPoison.Response{ status_code: 200 } }), path, "meta" },
+             { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, if(opts[:content] != false, do: delete(path, token), else: { :ok, %HTTPoison.Response{ status_code: 200 } }), path, "content" } do
                 :ok
         else
             { :path, error } -> error
