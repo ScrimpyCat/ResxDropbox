@@ -219,6 +219,14 @@ defmodule ResxDropbox do
     end
 
     @impl Resx.Producer
+    def source(reference) do
+        case to_path(reference) do
+            { :ok, { _, _, source } } -> { :ok, source }
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
     def resource_uri(reference) do
         case to_path(reference) do
             { :ok, { nil, { :id, id } } } -> { :ok, URI.encode("db" <> id) }
@@ -275,7 +283,7 @@ defmodule ResxDropbox do
                 }
                 reference = %Reference{
                     adapter: __MODULE__,
-                    repository: { name, { :path, path } },
+                    repository: { name, { :path, path }, resource.reference },
                     integrity: %Integrity{
                         timestamp: DateTime.to_unix(DateTime.utc_now)
                     }
