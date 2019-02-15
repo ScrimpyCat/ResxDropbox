@@ -8,7 +8,7 @@ __Note:__ Whilst [resx](https://github.com/ScrimpyCat/Resx) is pre 0.1.0, this l
 
 ```elixir
 def deps do
-    [{ :resx_dropbox, "== 0.0.3" }]
+    [{ :resx_dropbox, "== 0.0.4" }]
 end
 ```
 
