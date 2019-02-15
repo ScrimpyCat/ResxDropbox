@@ -36,6 +36,18 @@ defmodule ResxDropbox do
       `{ :ok, token }` or `:error` if there is no token for the given authority.
       Valid function formats are any callback variant, see `Callback` for more
       information.
+
+      ### Sources
+
+      Dropbox sources are dropbox content references with a backup data source, so
+      if the content no longer exists it will revert back to getting the data from
+      the source and creating the content again. The data source is any compatible
+      URI.
+
+        ResxDropbox.open("dbpath:/foo.txt?source=ZGF0YTp0ZXh0L3BsYWluO2NoYXJzZXQ9VVMtQVNDSUk7YmFzZTY0LGRHVnpkQT09")
+
+      If the source cannot be accessed anymore but the content exists, it will access
+      the content. If both cannot be accessed then the request will fail.
     """
     use Resx.Producer
     use Resx.Storer
