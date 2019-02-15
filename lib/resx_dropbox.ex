@@ -55,14 +55,25 @@ defmodule ResxDropbox do
     end
 
     defp to_path(%Reference{ repository: repo }), do: { :ok, repo }
-    defp to_path(%URI{ scheme: "dbpath", path: nil, authority: authority }), do: { :ok, { authority, { :path, "" } } }
-    defp to_path(%URI{ scheme: "dbpath", path: "/", authority: authority }), do: { :ok, { authority, { :path, "" } } }
-    defp to_path(%URI{ scheme: "dbpath", path: path, authority: authority }), do: { :ok, { authority, { :path, path } } }
+    defp to_path(%URI{ scheme: "dbpath", path: nil, authority: authority, query: query }), do: build_repo(authority, { :path, "" }, query)
+    defp to_path(%URI{ scheme: "dbpath", path: "/", authority: authority, query: query }), do: build_repo(authority, { :path, "" }, query)
+    defp to_path(%URI{ scheme: "dbpath", path: path, authority: authority, query: query }), do: build_repo(authority, { :path, path }, query)
     defp to_path(%URI{ scheme: "dbid", path: "/" }), do: { :error, { :invalid_reference, "no ID" } }
-    defp to_path(%URI{ scheme: "dbid", path: "/" <> path, authority: authority }), do: { :ok, { authority, { :id, "id:" <> path } } }
-    defp to_path(%URI{ scheme: "dbid", path: path, authority: authority }) when not is_nil(path), do: { :ok, { authority, { :id, "id:" <> path } } }
+    defp to_path(%URI{ scheme: "dbid", path: "/" <> path, authority: authority, query: query }), do: build_repo(authority, { :id, "id:" <> path }, query)
+    defp to_path(%URI{ scheme: "dbid", path: path, authority: authority, query: query }) when not is_nil(path), do: build_repo(authority, { :id, "id:" <> path }, query)
     defp to_path(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_path
     defp to_path(_), do: { :error, { :invalid_reference, "not a dropbox reference" } }
+
+    defp build_repo(authority, path, nil), do: { :ok, { authority, path, nil } }
+    defp build_repo(_, { :id, _ }, _), do: { :error, { :invalid_reference, "dbid cannot have a source" } }
+    defp build_repo(authority, path, query) do
+        with %{ "source" => data } <- URI.decode_query(query),
+             { :ok, source } <- Base.decode64(data) do
+                { :ok, { authority, path, source } }
+        else
+            _ -> { :error, { :invalid_reference, "source is not base64" } }
+        end
+    end
 
     defp format_api_error(%{ "error" => %{ ".tag" => "path", "path" => %{ ".tag" => "malformed_path" } } }, _), do: { :error, { :invalid_reference, "invalid path format" } }
     defp format_api_error(%{ "error" => %{ ".tag" => "path", "path" => %{ ".tag" => "restricted_content" } } }, _), do: { :error, { :invalid_reference, "content is restricted" } }
@@ -115,12 +126,16 @@ defmodule ResxDropbox do
 
         config :resx_dropbox,
             timestamp: :client
+
+      If it is a source reference then a `:mute` option may be passed, which expects
+      a boolean indicating whether the action should appear in the dropbox change
+      history or not.
     """
     @impl Resx.Producer
     def open(reference, opts \\ []) do
-        with { :path, { :ok, repo = { name, { _, path } } } } <- { :path, to_path(reference) },
+        with { :path, { :ok, repo = { name, { _, path }, _ } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :content, { :ok, response = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :content, download(path, token), path },
+             { :content, { :ok, response = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :content, download(path, token), repo },
              { :data, { :ok, data } } <- { :data, api_result(response) |> Poison.decode } do
                 content = %Content{
                     type: Resx.Producers.File.mime(data["name"]),
@@ -142,25 +157,27 @@ defmodule ResxDropbox do
         else
             { :path, error } -> error
             { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
-            { :content, error, path } -> format_http_error(error, path, "retrieve content")
+            { :content, error, { _, { _, path }, nil } } -> format_http_error(error, path, "retrieve content")
+            { :content, _, { name, { :path, path }, source } } -> Resource.store(source, __MODULE__, auth: name, path: path, mute: opts[:mute])
             { :data, _ } -> { :error, { :internal, "unable to process api result" } }
         end
     end
 
     @impl Resx.Producer
     def exists?(reference) do
-        with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
+        with { :path, { :ok, repo = { name, { _, path }, _ } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :metadata, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), path } do
+             { :metadata, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), repo } do
                 { :ok, true }
         else
             { :path, error } -> error
             { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
-            { :metadata, error, path } ->
+            { :metadata, error, { _, { _, path }, nil } } ->
                 case format_http_error(error, path, "retrieve metadata") do
                     { :error, { :unknown_resource, _ } } -> { :ok, false }
                     error -> error
                 end
+            { :metadata, _, { _, _, source } } -> Resource.exists?(source)
         end
     end
 
@@ -180,8 +197,8 @@ defmodule ResxDropbox do
              { :b, { :ok, repo_b } } <- { :b, to_path(b) } do
                 case { repo_a, repo_b } do
                     { repo, repo } -> true
-                    { { _, { :id, id } }, { _, { :id, id } } } -> true
-                    { { name_a, path_a }, { name_b, path_b } } ->
+                    { { _, { :id, id }, _ }, { _, { :id, id }, _ } } -> true
+                    { { name_a, path_a, _ }, { name_b, path_b, _ } } ->
                         with { :token_a, { :ok, token_a }, _ } <- { :token_a, get_token(name_a), name_a },
                              { :token_b, { :ok, token_b }, _ } <- { :token_b, get_token(name_b), name_b } do
                                 a = case path_a do
@@ -229,25 +246,35 @@ defmodule ResxDropbox do
     @impl Resx.Producer
     def resource_uri(reference) do
         case to_path(reference) do
-            { :ok, { nil, { :id, id } } } -> { :ok, URI.encode("db" <> id) }
-            { :ok, { authority, { :id, "id:" <> id } } } -> { :ok, URI.encode("dbid://" <> authority <> "/" <> id) }
-            { :ok, { nil, { :path, path } } } -> { :ok, URI.encode("dbpath:" <> path) }
-            { :ok, { authority, { :path, path } } } -> { :ok, URI.encode("dbpath://" <> authority <> path) }
+            { :ok, { nil, { :id, id }, nil } } -> { :ok, URI.encode("db" <> id) }
+            { :ok, { authority, { :id, "id:" <> id }, nil } } -> { :ok, URI.encode("dbid://" <> authority <> "/" <> id) }
+            { :ok, { nil, { :path, path }, nil } } -> { :ok, URI.encode("dbpath:" <> path) }
+            { :ok, { authority, { :path, path }, nil } } -> { :ok, URI.encode("dbpath://" <> authority <> path) }
+            { :ok, { authority, { :path, path }, source } } ->
+                case Resource.uri(source) do
+                    { :ok, uri } ->
+                        case authority do
+                            nil -> { :ok, URI.encode("dbpath:" <> path <> "?source=#{Base.encode64(uri)}") }
+                            authority -> { :ok, URI.encode("dbpath://" <> authority <> path <> "?source=#{Base.encode64(uri)}") }
+                        end
+                    error -> error
+                end
             error -> error
         end
     end
 
     @impl Resx.Producer
     def resource_attributes(reference) do
-        with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
+        with { :path, { :ok, repo = { name, { _, path }, _ } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
-             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), path },
+             { :metadata, { :ok, metadata = %HTTPoison.Response{ status_code: 200 } }, _ } <- { :metadata, get_metadata(path, token), repo },
              { :data, { :ok, data } } <- { :data, metadata.body |> Poison.decode } do
                 { :ok, data }
         else
             { :path, error } -> error
             { :token, _, name } -> { :error, { :invalid_reference, "no token for authority (#{inspect name})" } }
-            { :metadata, error, path } -> format_http_error(error, path, "retrieve metadata")
+            { :metadata, error, { _, { _, path }, nil } } -> format_http_error(error, path, "retrieve metadata")
+            { :metadata, _, { _, _, source } } -> Resource.attributes(source)
             { :data, _ } -> { :error, { :internal, "unable to process api result" } }
         end
     end
@@ -265,7 +292,6 @@ defmodule ResxDropbox do
       * `:mute` - expects a boolean indicating whether the action should appear in
       the dropbox change history or not.
     """
-    # TODO: source=&mute= encoding and opening, make upload_session stream
     @impl Resx.Storer
     def store(resource, options) do
         with { :path, { :ok, path } } <- { :path, Keyword.fetch(options, :path) },
@@ -310,7 +336,7 @@ defmodule ResxDropbox do
     @impl Resx.Storer
     @spec discard(Resx.ref, [meta: boolean, content: boolean]) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
     def discard(reference, opts) do
-        with { :path, { :ok, { name, { _, path } } } } <- { :path, to_path(reference) },
+        with { :path, { :ok, { name, { _, path }, _ } } } <- { :path, to_path(reference) },
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
              { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, if(opts[:meta] != false, do: delete(path <> ".meta", token), else: { :ok, %HTTPoison.Response{ status_code: 200 } }), path, "meta" },
              { :delete, { :ok, %HTTPoison.Response{ status_code: 200 } }, _, _ } <- { :delete, if(opts[:content] != false, do: delete(path, token), else: { :ok, %HTTPoison.Response{ status_code: 200 } }), path, "content" } do
