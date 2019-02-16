@@ -18,7 +18,7 @@
   "parsey": {:hex, :parsey, "0.0.3", "0a736c0179886c533c97edb24e7ffe410077ef88d5d5db7313f4cd15fde4cf8f", [:mix], [], "hexpm"},
   "path_match": {:hex, :path_match, "0.1.0", "7969b7de9ff1c9d8b35565e65c35b58d0bb2f56a28144266323b25c9ac420059", [:mix], [], "hexpm"},
   "poison": {:hex, :poison, "4.0.1", "bcb755a16fac91cad79bfe9fc3585bb07b9331e50cfe3420a24bcc2d735709ae", [:mix], [], "hexpm"},
-  "resx": {:hex, :resx, "0.0.4", "0bae635b71de7ed53513b4fee92bccdb526f888bdc202e5af6a6acad165086dd", [:mix], [{:callback, "~> 0.1.0", [hex: :callback, repo: "hexpm", optional: false]}, {:mime, "~> 1.3", [hex: :mime, repo: "hexpm", optional: false]}, {:path_match, "~> 0.1.0", [hex: :path_match, repo: "hexpm", optional: false]}], "hexpm"},
+  "resx": {:hex, :resx, "0.0.5", "bbad6d8176aead04bf621f571035fa67fe231b36a6f058250f762a2951925240", [:mix], [{:callback, "~> 0.1.0", [hex: :callback, repo: "hexpm", optional: false]}, {:mime, "~> 1.3", [hex: :mime, repo: "hexpm", optional: false]}, {:path_match, "~> 0.1.0", [hex: :path_match, repo: "hexpm", optional: false]}], "hexpm"},
   "simple_markdown": {:hex, :simple_markdown, "0.5.4", "e68b0c230f62e3dba126787597a20390095ad2c6eda9463605741b78a5e32d92", [:mix], [{:html_entities, "~> 0.3", [hex: :html_entities, repo: "hexpm", optional: false]}, {:parsey, "~> 0.0.3", [hex: :parsey, repo: "hexpm", optional: false]}], "hexpm"},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.4", "f0eafff810d2041e93f915ef59899c923f4568f4585904d010387ed74988e77b", [:make, :mix, :rebar3], [], "hexpm"},
   "unicode_util_compat": {:hex, :unicode_util_compat, "0.4.1", "d869e4c68901dd9531385bb0c8c40444ebf624e60b6962d95952775cac5e90cd", [:rebar3], [], "hexpm"},
