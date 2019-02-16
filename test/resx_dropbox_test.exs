@@ -19,9 +19,17 @@ defmodule ResxDropboxTest do
         :ok
     end
 
-    setup do
+    setup context do
         Application.put_env(:resx_dropbox, :token, @token)
-        :ok
+
+        if file = context[:temp_file] do
+            on_exit fn ->
+                Application.put_env(:resx_dropbox, :token, @token)
+                Resx.Resource.discard(file)
+            end
+        end
+
+        { :ok, context }
     end
 
     test "open" do
@@ -90,5 +98,77 @@ defmodule ResxDropboxTest do
     test "hash" do
         resource = Resx.Resource.open!(@test_uri)
         assert resource.reference.integrity.checksum == Resx.Resource.hash(resource, ResxDropbox.Utility.streamable_hasher)
+    end
+
+    describe "stores" do
+        @tag temp_file: @test_file <> ".text"
+        test "saving a file", %{ temp_file: path } do
+            assert { :ok, resource } = Resx.Resource.open!("data:,hello") |> Resx.Resource.store(ResxDropbox, path: path)
+
+            assert { :ok, true } == Resx.Resource.exists?("dbpath:" <> path)
+            assert "hello" == Resx.Resource.Content.data(resource.content)
+            assert "hello" == Resx.Resource.open!("dbpath:" <> path).content |> Resx.Resource.Content.data
+            assert :ok == Resx.Resource.discard(resource)
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+
+            assert { :error, { :unknown_resource, _ } } = Resx.Resource.open("dbpath:" <> path)
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open(resource)
+            assert { :ok, true } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open("dbpath:" <> path)
+
+            assert :ok == Resx.Resource.discard(resource)
+            assert { :ok, uri } = Resx.Resource.uri(resource)
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open(uri)
+            assert { :ok, true } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open("dbpath:" <> path)
+
+            Application.delete_env(:resx_dropbox, :token)
+            assert { :error, { :invalid_reference, _ } } = Resx.Resource.open!("data:,hello") |> Resx.Resource.store(ResxDropbox, path: path)
+        end
+
+        @tag temp_file: @test_file <> ".bin"
+        test "saving non-binary contents", %{ temp_file: path } do
+            resource = Resx.Resource.open!("data:,hello")
+            resource = %{ resource | content: %Resx.Resource.Content{ type: ["application/x.erlang.etf"], data: :foo } }
+            assert catch_error(Resx.Resource.store(resource, ResxDropbox, path: path))
+
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+
+            Application.put_env(:resx, :content_reducer, fn
+                content = %{ type: ["application/x.erlang.etf"|_] }, :binary -> &Enumerable.reduce([:erlang.term_to_binary(Resx.Resource.Content.data(content))], &1, &2)
+                content, :binary -> &Enumerable.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
+            end)
+            Application.put_env(:resx, :content_combiner, fn
+                %{ type: ["application/x.erlang.etf"|_], data: [data] } -> data
+                content -> Resx.Resource.Content.Stream.combine(content, <<>>)
+            end)
+
+            assert { :ok, resource } = Resx.Resource.store(resource, ResxDropbox, path: path)
+
+            assert :erlang.term_to_binary(:foo) == Resx.Resource.Content.data(resource.content)
+            assert { :ok, true } == Resx.Resource.exists?("dbpath:" <> path)
+            assert :erlang.term_to_binary(:foo) == Resx.Resource.open!("dbpath:" <> path).content |> Resx.Resource.Content.data
+            assert :ok == Resx.Resource.discard(resource)
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+
+            assert { :error, { :unknown_resource, _ } } = Resx.Resource.open("dbpath:" <> path)
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open(resource)
+            assert { :ok, true } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open("dbpath:" <> path)
+
+            assert :ok == Resx.Resource.discard(resource)
+            assert { :ok, uri } = Resx.Resource.uri(resource)
+            assert { :ok, false } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open(uri)
+            assert { :ok, true } == Resx.Resource.exists?("dbpath:" <> path)
+            assert { :ok, _ } = Resx.Resource.open("dbpath:" <> path)
+
+            Application.delete_env(:resx_dropbox, :token)
+            Application.delete_env(:resx, :content_reducer)
+            Application.delete_env(:resx, :content_combiner)
+        end
     end
 end
