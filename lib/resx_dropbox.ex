@@ -310,7 +310,7 @@ defmodule ResxDropbox do
              name <- options[:auth],
              { :token, { :ok, token }, _ } <- { :token, get_token(name), name },
              mute <- options[:mute] || false,
-             data <- Content.data(resource.content),
+             data <- resource.content |> Content.reducer |> Enum.into(<<>>),
              meta_path <- path <> ".meta",
              { :timestamp, { :ok, timestamp } } <- { :timestamp, DateTime.from_unix(resource.reference.integrity.timestamp) },
              { :upload_meta, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :upload_meta, upload(meta_path, token, :erlang.term_to_binary(resource.meta), timestamp, mute), meta_path },
