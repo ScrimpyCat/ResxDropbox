@@ -111,7 +111,7 @@ defmodule ResxDropbox do
 
     defp format_timestamp(timestamp) do
         { :ok, timestamp, _ } = DateTime.from_iso8601(timestamp)
-        DateTime.to_unix(timestamp)
+        timestamp
     end
 
     defp timestamp(data, :server), do: data["server_modified"] |> format_timestamp
@@ -312,7 +312,7 @@ defmodule ResxDropbox do
              mute <- options[:mute] || false,
              data <- resource.content |> Content.reducer |> Enum.into(<<>>),
              meta_path <- path <> ".meta",
-             { :timestamp, { :ok, timestamp } } <- { :timestamp, DateTime.from_unix(resource.reference.integrity.timestamp) },
+             timestamp <- DateTime.truncate(resource.reference.integrity.timestamp, :second) |> DateTime.to_iso8601,
              { :upload_meta, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :upload_meta, upload(meta_path, token, :erlang.term_to_binary(resource.meta), timestamp, mute), meta_path },
              { :upload_content, { :ok, %HTTPoison.Response{ status_code: 200 } }, _ } <- { :upload_content, upload(path, token, data, timestamp, mute), path } do
                 content = %Content{
@@ -323,7 +323,7 @@ defmodule ResxDropbox do
                     adapter: __MODULE__,
                     repository: { name, { :path, path }, resource.reference },
                     integrity: %Integrity{
-                        timestamp: DateTime.to_unix(DateTime.utc_now)
+                        timestamp: DateTime.utc_now
                     }
                 }
                 { :ok, %{ resource | reference: reference, content: content } }
