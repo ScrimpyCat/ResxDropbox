@@ -5,7 +5,7 @@ defmodule ResxDropbox.MixProject do
         [
             app: :resx_dropbox,
             description: "Dropbox producer for the resx library",
-            version: "0.0.5",
+            version: "0.1.0",
             elixir: "~> 1.7",
             start_permanent: Mix.env() == :prod,
             deps: deps(),
