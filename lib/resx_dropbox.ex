@@ -132,9 +132,9 @@ defmodule ResxDropbox do
     @doc """
       Opens a dropbox resource.
 
-      The `:timestamp` allows for choosing between `:server` or `:client` timestamps.
-      By default the server timestamp is used, or whatever application timestamp
-      setting was given.
+      The `:timestamp` option allows for choosing between `:server` or `:client`
+      timestamps. By default the server timestamp is used, or whatever application
+      timestamp setting was given.
 
         config :resx_dropbox,
             timestamp: :client
