@@ -107,7 +107,11 @@ defmodule ResxDropbox do
     defp get_header([_|headers], key), do: get_header(headers, key)
     defp get_header(_, _), do: nil
 
-    defp api_result(response), do: get_header(response.headers, "dropbox-api-result")
+    defp downcase_headers(headers, normalised \\ [])
+    defp downcase_headers([], normalised), do: normalised
+    defp downcase_headers([{ key, value }|headers], normalised), do: downcase_headers(headers, [{ String.downcase(key), value }|normalised])
+
+    defp api_result(response), do: downcase_headers(response.headers) |> get_header("dropbox-api-result")
 
     defp format_timestamp(timestamp) do
         { :ok, timestamp, _ } = DateTime.from_iso8601(timestamp)
