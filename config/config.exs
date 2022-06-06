@@ -32,5 +32,5 @@ use Mix.Config
 if Mix.env == :dev do
     import_config "simple_markdown_rules.exs"
 
-    config :ex_doc, :markdown_processor, ExDocSimpleMarkdown
+    config :ex_doc, :markdown_processor, { ExDocSimpleMarkdown, [] }
 end

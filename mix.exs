@@ -25,8 +25,8 @@ defmodule ResxDropbox.MixProject do
             { :httpoison, "~> 1.5" },
             { :poison, "~> 4.0" },
             { :ex_doc, "~> 0.18", only: :dev, runtime: false },
-            { :simple_markdown, "~> 0.5.4", only: :dev, runtime: false },
-            { :ex_doc_simple_markdown, "~> 0.3", only: :dev, runtime: false }
+            { :simple_markdown, "~> 0.8.2", only: :dev, runtime: false },
+            { :ex_doc_simple_markdown, "~> 0.5", only: :dev, runtime: false }
         ]
     end
 
